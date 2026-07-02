@@ -4,7 +4,7 @@ import * as tasksRepo from '../db/tasks.repo';
 import * as categoriesRepo from '../db/categories.repo';
 import * as subcategoriesRepo from '../db/subcategories.repo';
 import { computeProjectProgress, computeProjectTimeSpent } from '../domain/progress';
-import { completeTask, uncompleteTask } from '../domain/repeat';
+import { toggleTaskCompletion } from '../domain/completionFlow';
 import { progressBar } from '../components/progressBar';
 import { taskListItem } from '../components/taskListItem';
 import { navigate } from '../router/router';
@@ -51,7 +51,7 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
             filtered.map((task) =>
               taskListItem(task, {
                 onToggleComplete: (t) => {
-                  void (t.completed ? uncompleteTask(t.id) : completeTask(t.id)).then(render);
+                  void toggleTaskCompletion(t).then(render);
                 },
                 onDelete: (t) => {
                   if (confirm(`Delete task "${t.title}"?`)) void tasksRepo.remove(t.id).then(render);

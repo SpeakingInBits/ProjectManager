@@ -1,7 +1,7 @@
 import { h, clear } from '../utils/dom';
 import * as tasksRepo from '../db/tasks.repo';
 import * as projectsRepo from '../db/projects.repo';
-import { completeTask, uncompleteTask } from '../domain/repeat';
+import { toggleTaskCompletion } from '../domain/completionFlow';
 import { taskListItem } from '../components/taskListItem';
 import { navigate } from '../router/router';
 
@@ -72,7 +72,7 @@ export async function renderTasksPage(container: HTMLElement): Promise<void> {
                   task,
                   {
                     onToggleComplete: (t) => {
-                      void (t.completed ? uncompleteTask(t.id) : completeTask(t.id)).then(render);
+                      void toggleTaskCompletion(t).then(render);
                     },
                     onDelete: (t) => {
                       if (confirm(`Delete task "${t.title}"?`)) void tasksRepo.remove(t.id).then(render);
