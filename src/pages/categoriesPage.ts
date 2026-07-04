@@ -5,20 +5,62 @@ import * as subcategoriesRepo from '../db/subcategories.repo';
 export async function renderCategoriesPage(container: HTMLElement): Promise<void> {
   let categories = await categoriesRepo.list();
   let selectedCategoryId: string | null = categories[0]?.id ?? null;
+  let renamingCategoryId: string | null = null;
+  let renamingSubcategoryId: string | null = null;
 
-  function renameButton(currentName: string, onRename: (newName: string) => void): HTMLElement {
-    return h(
-      'button',
-      {
-        type: 'button',
-        class: 'btn btn--icon',
-        onclick: () => {
-          const next = prompt('Rename to:', currentName);
-          if (next && next.trim() && next.trim() !== currentName) onRename(next.trim());
-        },
-      },
-      ['Rename']
-    );
+  function renameRow(opts: {
+    name: string;
+    isRenaming: boolean;
+    onStartRename: () => void;
+    onSubmitRename: (newName: string) => void;
+    onCancelRename: () => void;
+    onSelect?: () => void;
+    onDelete: () => void;
+    active?: boolean;
+  }): HTMLElement {
+    if (opts.isRenaming) {
+      const input = h('input', {
+        type: 'text',
+        value: opts.name,
+        required: true,
+        'data-rename-input': 'true',
+      }) as HTMLInputElement;
+
+      return h(
+        'li',
+        { class: 'list-row' },
+        [
+          h(
+            'form',
+            {
+              class: 'inline-form',
+              onsubmit: (e: Event) => {
+                e.preventDefault();
+                const name = input.value.trim();
+                if (name && name !== opts.name) {
+                  opts.onSubmitRename(name);
+                } else {
+                  opts.onCancelRename();
+                }
+              },
+            },
+            [
+              input,
+              h('button', { type: 'submit', class: 'btn btn--icon' }, ['Save']),
+              h('button', { type: 'button', class: 'btn btn--icon', onclick: opts.onCancelRename }, ['Cancel']),
+            ]
+          ),
+        ]
+      );
+    }
+
+    return h('li', { class: `list-row${opts.active ? ' list-row--active' : ''}` }, [
+      opts.onSelect
+        ? h('button', { type: 'button', class: 'list-row-label', onclick: opts.onSelect }, [opts.name])
+        : h('span', { class: 'list-row-label' }, [opts.name]),
+      h('button', { type: 'button', class: 'btn btn--icon', onclick: opts.onStartRename }, ['Rename']),
+      h('button', { type: 'button', class: 'btn btn--icon btn--danger', onclick: opts.onDelete }, ['Delete']),
+    ]);
   }
 
   function renderCategoryList(): HTMLElement {
@@ -42,40 +84,36 @@ export async function renderCategoriesPage(container: HTMLElement): Promise<void
     );
 
     const items = categories.map((category) =>
-      h('li', { class: `list-row${category.id === selectedCategoryId ? ' list-row--active' : ''}` }, [
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'list-row-label',
-            onclick: () => {
-              selectedCategoryId = category.id;
-              void render();
-            },
-          },
-          [category.name]
-        ),
-        renameButton(category.name, (newName) => {
+      renameRow({
+        name: category.name,
+        isRenaming: renamingCategoryId === category.id,
+        active: category.id === selectedCategoryId,
+        onSelect: () => {
+          selectedCategoryId = category.id;
+          void render();
+        },
+        onStartRename: () => {
+          renamingCategoryId = category.id;
+          void render();
+        },
+        onSubmitRename: (newName) => {
+          renamingCategoryId = null;
           void categoriesRepo.update(category.id, { name: newName }).then(render);
-        }),
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'btn btn--icon btn--danger',
-            onclick: () => {
-              if (
-                confirm(
-                  `Delete category "${category.name}"? Its subcategories will be removed and any projects/tasks using it will become uncategorized.`
-                )
-              ) {
-                void categoriesRepo.removeCategory(category.id).then(render);
-              }
-            },
-          },
-          ['Delete']
-        ),
-      ])
+        },
+        onCancelRename: () => {
+          renamingCategoryId = null;
+          void render();
+        },
+        onDelete: () => {
+          if (
+            confirm(
+              `Delete category "${category.name}"? Its subcategories will be removed and any projects/tasks using it will become uncategorized.`
+            )
+          ) {
+            void categoriesRepo.removeCategory(category.id).then(render);
+          }
+        },
+      })
     );
 
     return h('section', { class: 'panel' }, [
@@ -113,25 +151,27 @@ export async function renderCategoriesPage(container: HTMLElement): Promise<void
     );
 
     const items = subcategories.map((sub) =>
-      h('li', { class: 'list-row' }, [
-        h('span', { class: 'list-row-label' }, [sub.name]),
-        renameButton(sub.name, (newName) => {
+      renameRow({
+        name: sub.name,
+        isRenaming: renamingSubcategoryId === sub.id,
+        onStartRename: () => {
+          renamingSubcategoryId = sub.id;
+          void render();
+        },
+        onSubmitRename: (newName) => {
+          renamingSubcategoryId = null;
           void subcategoriesRepo.update(sub.id, { name: newName }).then(render);
-        }),
-        h(
-          'button',
-          {
-            type: 'button',
-            class: 'btn btn--icon btn--danger',
-            onclick: () => {
-              if (confirm(`Delete subcategory "${sub.name}"?`)) {
-                void subcategoriesRepo.remove(sub.id).then(render);
-              }
-            },
-          },
-          ['Delete']
-        ),
-      ])
+        },
+        onCancelRename: () => {
+          renamingSubcategoryId = null;
+          void render();
+        },
+        onDelete: () => {
+          if (confirm(`Delete subcategory "${sub.name}"?`)) {
+            void subcategoriesRepo.remove(sub.id).then(render);
+          }
+        },
+      })
     );
 
     return h('section', { class: 'panel' }, [
@@ -146,6 +186,9 @@ export async function renderCategoriesPage(container: HTMLElement): Promise<void
     if (selectedCategoryId && !categories.some((c) => c.id === selectedCategoryId)) {
       selectedCategoryId = categories[0]?.id ?? null;
     }
+    if (renamingCategoryId && !categories.some((c) => c.id === renamingCategoryId)) {
+      renamingCategoryId = null;
+    }
 
     const subcategoryPanel = await renderSubcategoryPanel();
 
@@ -156,6 +199,12 @@ export async function renderCategoriesPage(container: HTMLElement): Promise<void
         h('div', { class: 'master-detail' }, [renderCategoryList(), subcategoryPanel]),
       ])
     );
+
+    const renameInput = container.querySelector<HTMLInputElement>('[data-rename-input]');
+    if (renameInput) {
+      renameInput.focus();
+      renameInput.select();
+    }
   }
 
   await render();
