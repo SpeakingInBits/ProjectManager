@@ -18,11 +18,11 @@ export async function renderTaskFormPage(container: HTMLElement, params: Record<
 
   const preselectedProjectId = existing?.projectId ?? params.projectId ?? null;
   const projects = await projectsRepo.list();
+  const preselectedProject = preselectedProjectId ? (projects.find((p) => p.id === preselectedProjectId) ?? null) : null;
 
-  let pickerValue: CategoryPickerValue = {
-    categoryId: existing?.categoryId ?? null,
-    subcategoryId: existing?.subcategoryId ?? null,
-  };
+  let pickerValue: CategoryPickerValue = existing
+    ? { categoryId: existing.categoryId, subcategoryId: existing.subcategoryId }
+    : { categoryId: preselectedProject?.categoryId ?? null, subcategoryId: preselectedProject?.subcategoryId ?? null };
   let repeatValue: RepeatConfig = existing?.repeat ?? { kind: 'never' };
 
   const titleInput = h('input', { type: 'text', name: 'title', required: true, value: existing?.title ?? '' }) as HTMLInputElement;
