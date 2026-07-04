@@ -19,7 +19,7 @@ export function projectCard(project: Project, progress: ProjectProgress, timeSpe
         h('span', { class: 'badge' }, [`${timeSpentHours}h logged`]),
       ]),
       progressBar(progress.percent),
-      h('div', { class: 'project-card-progress-label' }, [`${progress.done} / ${progress.total} tasks`]),
+      h('div', { class: 'project-card-progress-label' }, [`${progress.done} / ${progress.total} tasks (${progress.percent}%)`]),
     ]
   );
 }

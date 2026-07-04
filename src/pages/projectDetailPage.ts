@@ -105,7 +105,7 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
           h('span', { class: 'badge' }, [`${timeSpent}h logged`]),
         ]),
         progressBar(progress.percent),
-        h('div', { class: 'project-card-progress-label' }, [`${progress.done} / ${progress.total} tasks complete`]),
+        h('div', { class: 'project-card-progress-label' }, [`${progress.done} / ${progress.total} tasks complete (${progress.percent}%)`]),
         h('div', { class: 'page-header' }, [
           h('h2', {}, ['Tasks']),
           h(
