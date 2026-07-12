@@ -2,6 +2,7 @@ import { h, clear } from '../utils/dom';
 import * as tasksRepo from '../db/tasks.repo';
 import * as projectsRepo from '../db/projects.repo';
 import { toggleTaskCompletion } from '../domain/completionFlow';
+import { sortTasks } from '../domain/taskSort';
 import { taskListItem } from '../components/taskListItem';
 import { navigate } from '../router/router';
 
@@ -14,9 +15,7 @@ export async function renderTasksPage(container: HTMLElement): Promise<void> {
     const projects = scope === 'all' ? await projectsRepo.list() : [];
     const projectNameById = new Map(projects.map((p) => [p.id, p.title]));
 
-    const filtered = tasks
-      .filter((t) => showCompleted || !t.completed)
-      .sort((a, b) => Number(a.completed) - Number(b.completed));
+    const filtered = sortTasks(tasks.filter((t) => showCompleted || !t.completed));
 
     clear(container);
     container.append(
@@ -73,6 +72,9 @@ export async function renderTasksPage(container: HTMLElement): Promise<void> {
                   {
                     onToggleComplete: (t) => {
                       void toggleTaskCompletion(t).then(render);
+                    },
+                    onTogglePin: (t) => {
+                      void tasksRepo.update(t.id, { pinned: !t.pinned }).then(render);
                     },
                     onDelete: (t) => {
                       if (confirm(`Delete task "${t.title}"?`)) void tasksRepo.remove(t.id).then(render);

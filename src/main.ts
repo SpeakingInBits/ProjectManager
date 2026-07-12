@@ -7,6 +7,8 @@ import { renderProjectDetailPage } from './pages/projectDetailPage';
 import { renderProjectFormPage } from './pages/projectFormPage';
 import { renderTasksPage } from './pages/tasksPage';
 import { renderTaskFormPage } from './pages/taskFormPage';
+import { renderTimeTrackingPage } from './pages/timeTrackingPage';
+import { renderTimeEntryFormPage } from './pages/timeEntryFormPage';
 import { renderCategoriesPage } from './pages/categoriesPage';
 
 const app = document.querySelector<HTMLDivElement>('#app');
@@ -34,6 +36,9 @@ router
   .add('/tasks', renderTasksPage)
   .add('/tasks/new', renderTaskFormPage)
   .add('/tasks/:id/edit', renderTaskFormPage)
+  .add('/time', renderTimeTrackingPage)
+  .add('/time/new', renderTimeEntryFormPage)
+  .add('/time/:id/edit', renderTimeEntryFormPage)
   .add('/categories', renderCategoriesPage);
 
 router.start();

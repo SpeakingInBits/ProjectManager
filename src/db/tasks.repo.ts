@@ -10,7 +10,6 @@ export interface TaskInput {
   projectId: string | null;
   categoryId: string | null;
   subcategoryId: string | null;
-  timeSpentHours: number;
   repeat: RepeatConfig;
 }
 
@@ -31,6 +30,7 @@ export async function create(input: TaskInput): Promise<Task> {
   const task: Task = {
     id,
     ...input,
+    pinned: false,
     completed: false,
     completedAt: null,
     seriesId: id,

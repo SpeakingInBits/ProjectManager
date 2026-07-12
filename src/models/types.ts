@@ -20,6 +20,8 @@ export interface Project {
   dueDate: string | null;
   categoryId: ID | null;
   subcategoryId: ID | null;
+  // Manual sort position on the projects list; lower comes first.
+  order: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,12 +43,26 @@ export interface Task {
   projectId: ID | null;
   categoryId: ID | null;
   subcategoryId: ID | null;
-  timeSpentHours: number;
+  // Pinned tasks float to the top of the Tasks page until unpinned or completed.
+  pinned: boolean;
   completed: boolean;
   completedAt: string | null;
   repeat: RepeatConfig;
   seriesId: ID;
   previousInstanceId: ID | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// A time-tracked item, independent of Tasks. Time is logged in 15-minute
+// increments; `dailyMinutes` maps an ISO date (YYYY-MM-DD) to the total minutes
+// worked that day, which is what powers the weekly/monthly/total rollups. Days
+// that drop to zero are pruned from the map.
+export interface TimeEntry {
+  id: ID;
+  title: string;
+  description: string;
+  dailyMinutes: Record<string, number>;
   createdAt: string;
   updatedAt: string;
 }

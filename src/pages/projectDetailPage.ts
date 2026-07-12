@@ -3,8 +3,9 @@ import * as projectsRepo from '../db/projects.repo';
 import * as tasksRepo from '../db/tasks.repo';
 import * as categoriesRepo from '../db/categories.repo';
 import * as subcategoriesRepo from '../db/subcategories.repo';
-import { computeProjectProgress, computeProjectTimeSpent } from '../domain/progress';
+import { computeProjectProgress } from '../domain/progress';
 import { toggleTaskCompletion } from '../domain/completionFlow';
+import { sortTasks } from '../domain/taskSort';
 import { progressBar } from '../components/progressBar';
 import { taskListItem } from '../components/taskListItem';
 import { navigate } from '../router/router';
@@ -26,9 +27,7 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
   }
 
   function taskSection(allTasks: Task[]): HTMLElement {
-    const filtered = allTasks
-      .filter((t) => showCompleted || !t.completed)
-      .sort((a, b) => Number(a.completed) - Number(b.completed));
+    const filtered = sortTasks(allTasks.filter((t) => showCompleted || !t.completed));
 
     const toggle = h('label', { class: 'checkbox-field' }, [
       h('input', {
@@ -53,6 +52,9 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
                 onToggleComplete: (t) => {
                   void toggleTaskCompletion(t).then(render);
                 },
+                onTogglePin: (t) => {
+                  void tasksRepo.update(t.id, { pinned: !t.pinned }).then(render);
+                },
                 onDelete: (t) => {
                   if (confirm(`Delete task "${t.title}"?`)) void tasksRepo.remove(t.id).then(render);
                 },
@@ -73,7 +75,6 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
 
     const allTasks = await tasksRepo.listByProject(projectId);
     const progress = computeProjectProgress(allTasks);
-    const timeSpent = computeProjectTimeSpent(allTasks);
 
     const [category, subcategory] = await Promise.all([
       project.categoryId ? categoriesRepo.get(project.categoryId) : Promise.resolve(undefined),
@@ -102,7 +103,6 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
         h('div', { class: 'project-card-meta' }, [
           project.dueDate ? h('span', { class: 'badge' }, [`Due ${formatDateDisplay(project.dueDate)}`]) : null,
           category ? h('span', { class: 'badge' }, [subcategory ? `${category.name} / ${subcategory.name}` : category.name]) : null,
-          h('span', { class: 'badge' }, [`${timeSpent}h logged`]),
         ]),
         progressBar(progress.percent),
         h('div', { class: 'project-card-progress-label' }, [`${progress.done} / ${progress.total} tasks complete (${progress.percent}%)`]),

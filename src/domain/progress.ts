@@ -12,7 +12,3 @@ export function computeProjectProgress(tasks: Task[]): ProjectProgress {
   const percent = total === 0 ? 0 : Math.round((done / total) * 100);
   return { done, total, percent };
 }
-
-export function computeProjectTimeSpent(tasks: Task[]): number {
-  return tasks.reduce((sum, t) => sum + t.timeSpentHours, 0);
-}
