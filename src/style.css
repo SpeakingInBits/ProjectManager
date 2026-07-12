@@ -154,6 +154,17 @@ a {
   font-size: 0.8rem;
 }
 
+.btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-bg, rgba(37, 99, 235, 0.1));
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Forms */
 .form {
   display: flex;
@@ -270,8 +281,29 @@ textarea {
   border-color: var(--accent);
 }
 
+.project-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .project-card-title {
   margin: 0;
+  flex: 1;
+}
+
+.project-card-move-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.project-card-move {
+  min-height: 36px;
+  min-width: 36px;
+  padding: 4px 8px;
+  line-height: 1;
 }
 
 .project-card-desc {
@@ -356,6 +388,16 @@ textarea {
 
 .task-item--done {
   opacity: 0.6;
+}
+
+.task-item--pinned {
+  border-color: var(--accent);
+  background: var(--accent-bg, rgba(37, 99, 235, 0.06));
+}
+
+.task-pin-marker {
+  margin-right: 6px;
+  font-size: 0.85em;
 }
 
 .task-item--done .task-item-title {
@@ -481,4 +523,104 @@ textarea {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* Time tracking */
+.time-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.time-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.time-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.time-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.time-item-title {
+  font-weight: 600;
+}
+
+.time-item-desc {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.time-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.time-item-track {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.time-step {
+  min-width: 52px;
+  min-height: 52px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+}
+
+.time-total {
+  min-width: 96px;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.time-summaries {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.time-summary {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.time-summary-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.time-summary-value {
+  font-size: 1rem;
+  font-weight: 700;
 }

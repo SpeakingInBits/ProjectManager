@@ -33,10 +33,10 @@ export function computeNextDueDate(
 }
 
 // Marking a repeating task complete never resets it in place: the completed
-// row is finalized permanently (so it stays visible as history and its
-// timeSpentHours stays an honest log), and — if it repeats — a new row is
-// spawned for the next occurrence. This is what lets a project's progress
-// bar (done/total across all rows) actually reach and hold 100%.
+// row is finalized permanently (so it stays visible as history), and — if it
+// repeats — a new row is spawned for the next occurrence. This is what lets a
+// project's progress bar (done/total across all rows) actually reach and hold
+// 100%.
 export async function completeTask(
   taskId: ID,
   opts?: { completionDate?: Date }
@@ -48,6 +48,7 @@ export async function completeTask(
   const completed = await tasksRepo.update(taskId, {
     completed: true,
     completedAt: completionDate.toISOString(),
+    pinned: false,
   });
 
   if (task.repeat.kind === 'never') {
@@ -66,7 +67,7 @@ export async function completeTask(
     projectId: task.projectId,
     categoryId: task.categoryId,
     subcategoryId: task.subcategoryId,
-    timeSpentHours: 0,
+    pinned: false,
     completed: false,
     completedAt: null,
     repeat: task.repeat,

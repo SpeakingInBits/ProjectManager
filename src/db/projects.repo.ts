@@ -11,9 +11,12 @@ export interface ProjectInput {
   subcategoryId: string | null;
 }
 
+// Always returned in manual sort order (ascending `order`, createdAt as a
+// stable tiebreak) so callers can render the user's chosen sequence directly.
 export async function list(): Promise<Project[]> {
   const db = await getDb();
-  return db.getAll('projects');
+  const projects = await db.getAll('projects');
+  return projects.sort((a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt));
 }
 
 export async function get(id: string): Promise<Project | undefined> {
@@ -24,7 +27,9 @@ export async function get(id: string): Promise<Project | undefined> {
 export async function create(input: ProjectInput): Promise<Project> {
   const db = await getDb();
   const now = nowISO();
-  const project: Project = { id: uuid(), ...input, createdAt: now, updatedAt: now };
+  const existing = await db.getAll('projects');
+  const order = existing.reduce((max, p) => Math.max(max, p.order), -1) + 1;
+  const project: Project = { id: uuid(), ...input, order, createdAt: now, updatedAt: now };
   await db.add('projects', project);
   return project;
 }
@@ -36,6 +41,27 @@ export async function update(id: string, patch: Partial<ProjectInput>): Promise<
   const updated: Project = { ...existing, ...patch, updatedAt: nowISO() };
   await db.put('projects', updated);
   return updated;
+}
+
+// Moves a project one slot up or down in the manual order by swapping its
+// `order` value with the adjacent project's. No-op at the ends of the list.
+export async function move(id: string, direction: 'up' | 'down'): Promise<void> {
+  const db = await getDb();
+  const ordered = (await db.getAll('projects')).sort(
+    (a, b) => a.order - b.order || a.createdAt.localeCompare(b.createdAt)
+  );
+  const index = ordered.findIndex((p) => p.id === id);
+  if (index === -1) return;
+  const neighborIndex = direction === 'up' ? index - 1 : index + 1;
+  const current = ordered[index];
+  const neighbor = ordered[neighborIndex];
+  if (!current || !neighbor) return;
+  const now = nowISO();
+
+  const tx = db.transaction('projects', 'readwrite');
+  await tx.store.put({ ...current, order: neighbor.order, updatedAt: now });
+  await tx.store.put({ ...neighbor, order: current.order, updatedAt: now });
+  await tx.done;
 }
 
 // Deletion is not a silent cascade: the caller decides whether to delete the

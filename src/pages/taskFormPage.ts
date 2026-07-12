@@ -40,14 +40,6 @@ export async function renderTaskFormPage(container: HTMLElement, params: Record<
     if (hasDueDate.checked && !dueDateInput.value) dueDateInput.value = todayISODate();
   });
 
-  const timeSpentInput = h('input', {
-    type: 'number',
-    name: 'timeSpentHours',
-    min: '0',
-    step: '0.25',
-    value: String(existing?.timeSpentHours ?? 0),
-  }) as HTMLInputElement;
-
   const projectSelect = h('select', { name: 'projectId' }, [
     h('option', { value: '' }, ['Standalone (no project)']),
     ...projects.map((p) => h('option', { value: p.id, selected: p.id === preselectedProjectId }, [p.title])),
@@ -67,7 +59,6 @@ export async function renderTaskFormPage(container: HTMLElement, params: Record<
       h('label', { class: 'checkbox-field' }, [hasDueDate, 'Has due date']),
       h('label', { class: 'field' }, ['Due date', dueDateInput]),
     ]),
-    h('label', { class: 'field' }, ['Time spent (hours)', timeSpentInput]),
     h('label', { class: 'field' }, ['Project', projectSelect]),
     picker,
     repeatEditor,
@@ -89,7 +80,6 @@ export async function renderTaskFormPage(container: HTMLElement, params: Record<
       projectId: projectSelect.value || null,
       categoryId: pickerValue.categoryId,
       subcategoryId: pickerValue.subcategoryId,
-      timeSpentHours: Math.max(0, Number(timeSpentInput.value) || 0),
       repeat: repeatValue,
     };
 

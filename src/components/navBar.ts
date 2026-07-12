@@ -3,6 +3,7 @@ import { h } from '../utils/dom';
 const LINKS: [string, string][] = [
   ['#/', 'Projects'],
   ['#/tasks', 'Tasks'],
+  ['#/time', 'Time'],
   ['#/categories', 'Categories'],
 ];
 
