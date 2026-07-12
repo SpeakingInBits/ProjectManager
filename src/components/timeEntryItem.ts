@@ -1,7 +1,7 @@
 import { h } from '../utils/dom';
 import type { TimeEntry } from '../models/types';
 import { navigate } from '../router/router';
-import { formatMinutes, totalMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
+import { formatMinutes, totalMinutes, todayMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
 
 export interface TimeEntryItemHandlers {
   onAdd: (entry: TimeEntry) => void;
@@ -56,6 +56,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
       ),
     ]),
     h('div', { class: 'time-summaries' }, [
+      summary('Today', todayMinutes(entry)),
       summary('This week', weekMinutes(entry)),
       summary('This month', monthMinutes(entry)),
       summary('Total', total),
