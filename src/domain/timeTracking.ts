@@ -7,6 +7,10 @@ export function totalMinutes(entry: TimeEntry): number {
   return Object.values(entry.dailyMinutes).reduce((sum, m) => sum + m, 0);
 }
 
+export function todayMinutes(entry: TimeEntry, today: string = todayISODate()): number {
+  return entry.dailyMinutes[today] ?? 0;
+}
+
 // Sums minutes for every logged day whose ISO date falls within
 // [startISO, endISO], both inclusive. ISO date strings compare correctly.
 export function rangeMinutes(entry: TimeEntry, startISO: string, endISO: string): number {
