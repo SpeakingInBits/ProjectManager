@@ -11,6 +11,8 @@
   --success: #16a34a;
   --overdue-bg: #fef2f2;
   --overdue-text: #b91c1c;
+  --worked-today-bg: #eff6ff;
+  --worked-today-border: #bfdbfe;
   --radius: 10px;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -543,6 +545,11 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.time-item--worked-today {
+  background: var(--worked-today-bg);
+  border-color: var(--worked-today-border);
 }
 
 .time-item-head {
