@@ -7,7 +7,7 @@ import { taskListItem } from '../components/taskListItem';
 import { navigate } from '../router/router';
 
 export async function renderTasksPage(container: HTMLElement): Promise<void> {
-  let scope: 'standalone' | 'all' = 'standalone';
+  let scope: 'standalone' | 'all' = 'all';
   let showCompleted = false;
 
   async function render(): Promise<void> {
