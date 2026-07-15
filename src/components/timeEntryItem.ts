@@ -11,6 +11,7 @@ export interface TimeEntryItemHandlers {
 
 export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers): HTMLElement {
   const total = totalMinutes(entry);
+  const today = todayMinutes(entry);
 
   const summary = (label: string, minutes: number): HTMLElement =>
     h('div', { class: 'time-summary' }, [
@@ -18,7 +19,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
       h('span', { class: 'time-summary-value' }, [formatMinutes(minutes)]),
     ]);
 
-  return h('li', { class: 'time-item' }, [
+  return h('li', { class: `time-item${today > 0 ? ' time-item--worked-today' : ''}` }, [
     h('div', { class: 'time-item-head' }, [
       h('div', { class: 'time-item-body' }, [
         h('div', { class: 'time-item-title' }, [entry.title]),
@@ -56,7 +57,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
       ),
     ]),
     h('div', { class: 'time-summaries' }, [
-      summary('Today', todayMinutes(entry)),
+      summary('Today', today),
       summary('This week', weekMinutes(entry)),
       summary('This month', monthMinutes(entry)),
       summary('Total', total),
