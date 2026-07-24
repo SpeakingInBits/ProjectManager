@@ -617,16 +617,97 @@ textarea {
   font-size: 0.95rem;
 }
 
+.time-today {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.time-today--overall {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.time-today-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-today-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.time-today-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.time-today-main .btn {
+  margin-left: auto;
+}
+
+.time-today-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.time-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.time-history-day {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.time-history-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.time-history-date {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.time-history-minutes {
+  font-weight: 700;
+}
+
+.time-history-note {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .time-summaries {
   display: flex;
   gap: 8px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
-}
-
-.time-summaries--plain {
-  border-top: 0;
-  padding-top: 0;
 }
 
 .time-summary {

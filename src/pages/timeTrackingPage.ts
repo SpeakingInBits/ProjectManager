@@ -3,6 +3,8 @@ import type { TimeEntry } from '../models/types';
 import * as timeEntriesRepo from '../db/timeEntries.repo';
 import { timeEntryItem } from '../components/timeEntryItem';
 import { INCREMENT_MINUTES, formatMinutes, todayMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
+import { openDayNoteModal, openTimeHistoryModal } from '../components/timeEntryModals';
+import { todayISODate } from '../utils/dates';
 import { navigate } from '../router/router';
 
 // Rolls every tracked item's logged minutes into a single Today/week/month
@@ -19,8 +21,13 @@ function overallSummary(entries: TimeEntry[]): HTMLElement {
 
   return h('section', { class: 'time-overall' }, [
     h('h2', { class: 'time-overall-title' }, ['All items']),
-    h('div', { class: 'time-summaries time-summaries--plain' }, [
-      tile('Today', sum((entry) => todayMinutes(entry))),
+    h('div', { class: 'time-today time-today--overall' }, [
+      h('div', { class: 'time-today-main' }, [
+        h('span', { class: 'time-today-label' }, ['Today']),
+        h('span', { class: 'time-today-value' }, [formatMinutes(sum((entry) => todayMinutes(entry)))]),
+      ]),
+    ]),
+    h('div', { class: 'time-summaries' }, [
       tile('This week', sum((entry) => weekMinutes(entry))),
       tile('This month', sum((entry) => monthMinutes(entry))),
     ]),
@@ -55,6 +62,14 @@ export async function renderTimeTrackingPage(container: HTMLElement): Promise<vo
                   onDelete: (e) => {
                     if (confirm(`Delete time-tracked item "${e.title}"? This also deletes its logged time.`))
                       void timeEntriesRepo.remove(e.id).then(render);
+                  },
+                  onEditNote: (e) => {
+                    openDayNoteModal(e, (note) => {
+                      void timeEntriesRepo.setDayNote(e.id, todayISODate(), note).then(render);
+                    });
+                  },
+                  onHistory: (e) => {
+                    openTimeHistoryModal(e);
                   },
                 })
               )
