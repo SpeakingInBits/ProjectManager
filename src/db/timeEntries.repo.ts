@@ -22,7 +22,7 @@ export async function get(id: string): Promise<TimeEntry | undefined> {
 export async function create(input: TimeEntryInput): Promise<TimeEntry> {
   const db = await getDb();
   const now = nowISO();
-  const entry: TimeEntry = { id: uuid(), ...input, dailyMinutes: {}, createdAt: now, updatedAt: now };
+  const entry: TimeEntry = { id: uuid(), ...input, dailyMinutes: {}, dailyNotes: {}, createdAt: now, updatedAt: now };
   await db.add('timeEntries', entry);
   return entry;
 }
@@ -46,7 +46,7 @@ export async function remove(id: string): Promise<void> {
 
 // Adds `deltaMinutes` (may be negative) to today's logged total, clamped so a
 // day never goes below zero. A day that reaches zero is pruned from the map so
-// it doesn't count as a worked day.
+// it doesn't count as a worked day, and its note goes with it.
 export async function addMinutesToday(id: string, deltaMinutes: number): Promise<TimeEntry> {
   const db = await getDb();
   const existing = await db.get('timeEntries', id);
@@ -55,13 +55,35 @@ export async function addMinutesToday(id: string, deltaMinutes: number): Promise
   const today = todayISODate();
   const next = Math.max(0, (existing.dailyMinutes[today] ?? 0) + deltaMinutes);
   const dailyMinutes = { ...existing.dailyMinutes };
+  const dailyNotes = { ...existing.dailyNotes };
   if (next === 0) {
     delete dailyMinutes[today];
+    delete dailyNotes[today];
   } else {
     dailyMinutes[today] = next;
   }
 
-  const updated: TimeEntry = { ...existing, dailyMinutes, updatedAt: nowISO() };
+  const updated: TimeEntry = { ...existing, dailyMinutes, dailyNotes, updatedAt: nowISO() };
+  await db.put('timeEntries', updated);
+  return updated;
+}
+
+// Sets or clears the note for a day. Notes only exist for days with logged
+// time; an empty/whitespace note removes the day's note.
+export async function setDayNote(id: string, date: string, note: string): Promise<TimeEntry> {
+  const db = await getDb();
+  const existing = await db.get('timeEntries', id);
+  if (!existing) throw new Error(`Time entry ${id} not found`);
+
+  const trimmed = note.trim();
+  const dailyNotes = { ...existing.dailyNotes };
+  if (trimmed === '' || !(existing.dailyMinutes[date] ?? 0)) {
+    delete dailyNotes[date];
+  } else {
+    dailyNotes[date] = trimmed;
+  }
+
+  const updated: TimeEntry = { ...existing, dailyNotes, updatedAt: nowISO() };
   await db.put('timeEntries', updated);
   return updated;
 }

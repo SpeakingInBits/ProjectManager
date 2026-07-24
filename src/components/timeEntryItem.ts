@@ -2,16 +2,20 @@ import { h } from '../utils/dom';
 import type { TimeEntry } from '../models/types';
 import { navigate } from '../router/router';
 import { formatMinutes, totalMinutes, todayMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
+import { todayISODate } from '../utils/dates';
 
 export interface TimeEntryItemHandlers {
   onAdd: (entry: TimeEntry) => void;
   onSubtract: (entry: TimeEntry) => void;
   onDelete: (entry: TimeEntry) => void;
+  onEditNote: (entry: TimeEntry) => void;
+  onHistory: (entry: TimeEntry) => void;
 }
 
 export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers): HTMLElement {
   const total = totalMinutes(entry);
   const today = todayMinutes(entry);
+  const todayNote = entry.dailyNotes[todayISODate()] ?? null;
 
   const summary = (label: string, minutes: number): HTMLElement =>
     h('div', { class: 'time-summary' }, [
@@ -26,6 +30,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
         entry.description ? h('div', { class: 'time-item-desc' }, [entry.description]) : null,
       ]),
       h('div', { class: 'time-item-actions' }, [
+        h('button', { class: 'btn btn--icon', type: 'button', onclick: () => handlers.onHistory(entry) }, ['History']),
         h('button', { class: 'btn btn--icon', type: 'button', onclick: () => navigate(`/time/${entry.id}/edit`) }, ['Edit']),
         h('button', { class: 'btn btn--icon btn--danger', type: 'button', onclick: () => handlers.onDelete(entry) }, ['Delete']),
       ]),
@@ -56,8 +61,19 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
         ['+']
       ),
     ]),
+    h('div', { class: 'time-today' }, [
+      h('div', { class: 'time-today-main' }, [
+        h('span', { class: 'time-today-label' }, ['Today']),
+        h('span', { class: 'time-today-value' }, [formatMinutes(today)]),
+        today > 0
+          ? h('button', { class: 'btn btn--icon', type: 'button', onclick: () => handlers.onEditNote(entry) }, [
+              todayNote ? 'Edit note' : 'Add note',
+            ])
+          : null,
+      ]),
+      todayNote ? h('div', { class: 'time-today-note' }, [todayNote]) : null,
+    ]),
     h('div', { class: 'time-summaries' }, [
-      summary('Today', today),
       summary('This week', weekMinutes(entry)),
       summary('This month', monthMinutes(entry)),
       summary('Total', total),

@@ -57,12 +57,15 @@ export interface Task {
 // A time-tracked item, independent of Tasks. Time is logged in 15-minute
 // increments; `dailyMinutes` maps an ISO date (YYYY-MM-DD) to the total minutes
 // worked that day, which is what powers the weekly/monthly/total rollups. Days
-// that drop to zero are pruned from the map.
+// that drop to zero are pruned from the map. `dailyNotes` maps the same ISO
+// dates to an optional note describing what was worked on; a note only exists
+// for days that have logged time, and is pruned along with its day.
 export interface TimeEntry {
   id: ID;
   title: string;
   description: string;
   dailyMinutes: Record<string, number>;
+  dailyNotes: Record<string, string>;
   createdAt: string;
   updatedAt: string;
 }

@@ -38,6 +38,19 @@ export function monthMinutes(entry: TimeEntry, today: string = todayISODate()): 
   return rangeMinutes(entry, toISODate(start), toISODate(end));
 }
 
+export interface DayLog {
+  date: string; // ISO date (YYYY-MM-DD)
+  minutes: number;
+  note: string | null;
+}
+
+// Every logged day with its minutes and optional note, newest first.
+export function dayHistory(entry: TimeEntry): DayLog[] {
+  return Object.entries(entry.dailyMinutes)
+    .map(([date, minutes]) => ({ date, minutes, note: entry.dailyNotes[date] ?? null }))
+    .sort((a, b) => b.date.localeCompare(a.date));
+}
+
 // Renders minutes as "Xh Ym", "Xh", or "Ym" (and "0m" when empty).
 export function formatMinutes(minutes: number): string {
   const hours = Math.floor(minutes / 60);
