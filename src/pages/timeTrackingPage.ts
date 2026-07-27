@@ -64,12 +64,17 @@ export async function renderTimeTrackingPage(container: HTMLElement): Promise<vo
                       void timeEntriesRepo.remove(e.id).then(render);
                   },
                   onEditNote: (e) => {
-                    openDayNoteModal(e, (note) => {
+                    openDayNoteModal(e, todayISODate(), (note) => {
                       void timeEntriesRepo.setDayNote(e.id, todayISODate(), note).then(render);
                     });
                   },
                   onHistory: (e) => {
-                    openTimeHistoryModal(e);
+                    openTimeHistoryModal(e, (date, note) =>
+                      timeEntriesRepo.setDayNote(e.id, date, note).then((updated) => {
+                        void render();
+                        return updated;
+                      })
+                    );
                   },
                 })
               )
