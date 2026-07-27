@@ -2,7 +2,7 @@ import { h } from '../utils/dom';
 import type { TimeEntry } from '../models/types';
 import { navigate } from '../router/router';
 import { formatMinutes, totalMinutes, todayMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
-import { todayISODate } from '../utils/dates';
+import { todayISODate, formatDateDisplay } from '../utils/dates';
 
 export interface TimeEntryItemHandlers {
   onAdd: (entry: TimeEntry) => void;
@@ -12,10 +12,14 @@ export interface TimeEntryItemHandlers {
   onHistory: (entry: TimeEntry) => void;
 }
 
-export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers): HTMLElement {
+// `entryDate` is the day time and notes are logged to — normally today, but
+// selectable from the page settings to backfill missed days.
+export function timeEntryItem(entry: TimeEntry, entryDate: string, handlers: TimeEntryItemHandlers): HTMLElement {
   const total = totalMinutes(entry);
-  const today = todayMinutes(entry);
-  const todayNote = entry.dailyNotes[todayISODate()] ?? null;
+  const isToday = entryDate === todayISODate();
+  const dayLabel = isToday ? 'Today' : formatDateDisplay(entryDate);
+  const dayMinutes = todayMinutes(entry, entryDate);
+  const dayNote = entry.dailyNotes[entryDate] ?? null;
 
   const summary = (label: string, minutes: number): HTMLElement =>
     h('div', { class: 'time-summary' }, [
@@ -23,7 +27,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
       h('span', { class: 'time-summary-value' }, [formatMinutes(minutes)]),
     ]);
 
-  return h('li', { class: `time-item${today > 0 ? ' time-item--worked-today' : ''}` }, [
+  return h('li', { class: `time-item${dayMinutes > 0 ? ' time-item--worked-today' : ''}` }, [
     h('div', { class: 'time-item-head' }, [
       h('div', { class: 'time-item-body' }, [
         h('div', { class: 'time-item-title' }, [entry.title]),
@@ -41,7 +45,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
         {
           class: 'btn time-step',
           type: 'button',
-          title: 'Subtract 15 minutes from today',
+          title: `Subtract 15 minutes from ${isToday ? 'today' : dayLabel}`,
           'aria-label': 'Subtract 15 minutes',
           disabled: total === 0,
           onclick: () => handlers.onSubtract(entry),
@@ -54,7 +58,7 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
         {
           class: 'btn time-step',
           type: 'button',
-          title: 'Add 15 minutes to today',
+          title: `Add 15 minutes to ${isToday ? 'today' : dayLabel}`,
           'aria-label': 'Add 15 minutes',
           onclick: () => handlers.onAdd(entry),
         },
@@ -63,15 +67,15 @@ export function timeEntryItem(entry: TimeEntry, handlers: TimeEntryItemHandlers)
     ]),
     h('div', { class: 'time-today' }, [
       h('div', { class: 'time-today-main' }, [
-        h('span', { class: 'time-today-label' }, ['Today']),
-        h('span', { class: 'time-today-value' }, [formatMinutes(today)]),
-        today > 0
+        h('span', { class: 'time-today-label' }, [dayLabel]),
+        h('span', { class: 'time-today-value' }, [formatMinutes(dayMinutes)]),
+        dayMinutes > 0
           ? h('button', { class: 'btn btn--icon', type: 'button', onclick: () => handlers.onEditNote(entry) }, [
-              todayNote ? 'Edit note' : 'Add note',
+              dayNote ? 'Edit note' : 'Add note',
             ])
           : null,
       ]),
-      todayNote ? h('div', { class: 'time-today-note' }, [todayNote]) : null,
+      dayNote ? h('div', { class: 'time-today-note' }, [dayNote]) : null,
     ]),
     h('div', { class: 'time-summaries' }, [
       summary('This week', weekMinutes(entry)),

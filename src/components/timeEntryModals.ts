@@ -36,6 +36,48 @@ export function openDayNoteModal(entry: TimeEntry, date: string, onSave: (note: 
   noteInput.focus();
 }
 
+// Settings modal for the time tracking page: pick the date that time and
+// notes are logged to, for backfilling days that were missed.
+export function openEntryDateModal(currentDate: string, onSave: (date: string) => void): void {
+  const dateInput = h('input', {
+    type: 'date',
+    name: 'entryDate',
+    value: currentDate,
+    required: true,
+  }) as HTMLInputElement;
+
+  const form = h('form', { class: 'modal-form' }, [
+    h('h2', {}, ['Time tracking settings']),
+    h('p', {}, ['Choose the date that time and notes are logged to. Useful for filling in days you missed.']),
+    h('label', { class: 'field' }, ['Entry date', dateInput]),
+    h('div', { class: 'form-actions' }, [
+      h('button', { type: 'submit', class: 'btn btn--primary' }, ['Save']),
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'btn',
+          onclick: () => {
+            dateInput.value = todayISODate();
+          },
+        },
+        ['Use today']
+      ),
+      h('button', { type: 'button', class: 'btn', onclick: () => modal.close() }, ['Cancel']),
+    ]),
+  ]);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!dateInput.value) return;
+    modal.close();
+    onSave(dateInput.value);
+  });
+
+  const modal = openModal(form);
+  dateInput.focus();
+}
+
 // Modal showing the full day-by-day history of an item: date, time logged,
 // and the note for each day. Clicking a day opens the note editor for that
 // day; `onSaveNote` persists the note and resolves with the updated entry so

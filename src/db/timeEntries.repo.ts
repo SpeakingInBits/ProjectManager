@@ -1,7 +1,7 @@
 import { getDb } from './db';
 import type { TimeEntry } from '../models/types';
 import { uuid } from '../utils/uuid';
-import { nowISO, todayISODate } from '../utils/dates';
+import { nowISO } from '../utils/dates';
 
 export interface TimeEntryInput {
   title: string;
@@ -44,23 +44,22 @@ export async function remove(id: string): Promise<void> {
   await db.delete('timeEntries', id);
 }
 
-// Adds `deltaMinutes` (may be negative) to today's logged total, clamped so a
+// Adds `deltaMinutes` (may be negative) to a day's logged total, clamped so a
 // day never goes below zero. A day that reaches zero is pruned from the map so
 // it doesn't count as a worked day, and its note goes with it.
-export async function addMinutesToday(id: string, deltaMinutes: number): Promise<TimeEntry> {
+export async function addMinutesOnDay(id: string, date: string, deltaMinutes: number): Promise<TimeEntry> {
   const db = await getDb();
   const existing = await db.get('timeEntries', id);
   if (!existing) throw new Error(`Time entry ${id} not found`);
 
-  const today = todayISODate();
-  const next = Math.max(0, (existing.dailyMinutes[today] ?? 0) + deltaMinutes);
+  const next = Math.max(0, (existing.dailyMinutes[date] ?? 0) + deltaMinutes);
   const dailyMinutes = { ...existing.dailyMinutes };
   const dailyNotes = { ...existing.dailyNotes };
   if (next === 0) {
-    delete dailyMinutes[today];
-    delete dailyNotes[today];
+    delete dailyMinutes[date];
+    delete dailyNotes[date];
   } else {
-    dailyMinutes[today] = next;
+    dailyMinutes[date] = next;
   }
 
   const updated: TimeEntry = { ...existing, dailyMinutes, dailyNotes, updatedAt: nowISO() };
