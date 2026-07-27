@@ -16,10 +16,13 @@ export function openModal(content: HTMLElement, onDismiss?: () => void): ModalHa
   }
 
   function onKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      close();
-      onDismiss?.();
-    }
+    if (e.key !== 'Escape') return;
+    // Modals can stack (e.g. note editor over history) — Escape only closes
+    // the topmost one.
+    const overlays = document.querySelectorAll('.modal-overlay');
+    if (overlays[overlays.length - 1] !== overlay) return;
+    close();
+    onDismiss?.();
   }
 
   overlay.addEventListener('click', (e) => {
