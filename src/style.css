@@ -104,6 +104,12 @@ a {
   flex-wrap: wrap;
 }
 
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .button-row {
   display: flex;
   gap: 8px;
@@ -658,6 +664,32 @@ textarea {
   color: var(--text-muted);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.time-date-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius);
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+.time-date-warning-btn {
+  border-color: #f59e0b;
+  color: #92400e;
+  background: #fef3c7;
+  flex-shrink: 0;
+}
+
+.time-date-warning-btn:hover {
+  background: #fde68a;
+  border-color: #d97706;
 }
 
 .time-history {
