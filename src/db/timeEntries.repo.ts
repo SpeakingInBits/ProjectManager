@@ -6,6 +6,7 @@ import { nowISO } from '../utils/dates';
 export interface TimeEntryInput {
   title: string;
   description: string;
+  categoryId: string | null;
 }
 
 export async function list(): Promise<TimeEntry[]> {

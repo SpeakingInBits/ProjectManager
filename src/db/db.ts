@@ -2,7 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type { Category, Subcategory, Project, Task, TimeEntry } from '../models/types';
 
 export const DB_NAME = 'project-manager-db';
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 // Note: IndexedDB indexes silently exclude records whose index key path
 // evaluates to `null`/`undefined` (neither is a valid IndexedDB key), so we
@@ -91,6 +91,15 @@ export function getDb(): Promise<IDBPDatabase<PMDB>> {
           const timeEntries = await timeEntryStore.getAll();
           for (const entry of timeEntries) {
             await timeEntryStore.put({ ...entry, dailyNotes: entry.dailyNotes ?? {} });
+          }
+        }
+
+        if (oldVersion < 4) {
+          // Backfill the new `categoryId` field on existing time entries.
+          const timeEntryStore = tx.objectStore('timeEntries');
+          const timeEntries = await timeEntryStore.getAll();
+          for (const entry of timeEntries) {
+            await timeEntryStore.put({ ...entry, categoryId: entry.categoryId ?? null });
           }
         }
       },

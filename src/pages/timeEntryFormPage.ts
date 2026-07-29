@@ -1,5 +1,6 @@
 import { h, clear } from '../utils/dom';
 import * as timeEntriesRepo from '../db/timeEntries.repo';
+import * as categoriesRepo from '../db/categories.repo';
 import { navigate } from '../router/router';
 
 export async function renderTimeEntryFormPage(container: HTMLElement, params: Record<string, string>): Promise<void> {
@@ -14,9 +15,16 @@ export async function renderTimeEntryFormPage(container: HTMLElement, params: Re
   const titleInput = h('input', { type: 'text', name: 'title', required: true, value: existing?.title ?? '' }) as HTMLInputElement;
   const descInput = h('textarea', { name: 'description', rows: 4, value: existing?.description ?? '' }) as HTMLTextAreaElement;
 
+  const categories = await categoriesRepo.list();
+  const categorySelect = h('select', { name: 'categoryId' }, [
+    h('option', { value: '' }, ['No category']),
+    ...categories.map((c) => h('option', { value: c.id, selected: c.id === existing?.categoryId }, [c.name])),
+  ]) as HTMLSelectElement;
+
   const form = h('form', { class: 'form' }, [
     h('label', { class: 'field' }, ['Title', titleInput]),
     h('label', { class: 'field' }, ['Description', descInput]),
+    h('label', { class: 'field' }, ['Category', categorySelect]),
     h('div', { class: 'form-actions' }, [
       h('button', { type: 'submit', class: 'btn btn--primary' }, [isEdit ? 'Save changes' : 'Create item']),
       h('button', { type: 'button', class: 'btn', onclick: () => history.back() }, ['Cancel']),
@@ -28,7 +36,7 @@ export async function renderTimeEntryFormPage(container: HTMLElement, params: Re
     const title = titleInput.value.trim();
     if (!title) return;
 
-    const input = { title, description: descInput.value.trim() };
+    const input = { title, description: descInput.value.trim(), categoryId: categorySelect.value || null };
 
     void (isEdit
       ? timeEntriesRepo.update(existing!.id, input).then(() => navigate('/time'))
