@@ -13,8 +13,14 @@ export interface TimeEntryItemHandlers {
 }
 
 // `entryDate` is the day time and notes are logged to — normally today, but
-// selectable from the page settings to backfill missed days.
-export function timeEntryItem(entry: TimeEntry, entryDate: string, handlers: TimeEntryItemHandlers): HTMLElement {
+// selectable from the page settings to backfill missed days. `categoryName` is
+// the resolved name of the entry's category, or null when uncategorized.
+export function timeEntryItem(
+  entry: TimeEntry,
+  entryDate: string,
+  handlers: TimeEntryItemHandlers,
+  categoryName: string | null = null
+): HTMLElement {
   const total = totalMinutes(entry);
   const isToday = entryDate === todayISODate();
   const dayLabel = isToday ? 'Today' : formatDateDisplay(entryDate);
@@ -30,7 +36,10 @@ export function timeEntryItem(entry: TimeEntry, entryDate: string, handlers: Tim
   return h('li', { class: `time-item${dayMinutes > 0 ? ' time-item--worked-today' : ''}` }, [
     h('div', { class: 'time-item-head' }, [
       h('div', { class: 'time-item-body' }, [
-        h('div', { class: 'time-item-title' }, [entry.title]),
+        h('div', { class: 'time-item-title' }, [
+          entry.title,
+          categoryName ? h('span', { class: 'badge time-item-category' }, [categoryName]) : null,
+        ]),
         entry.description ? h('div', { class: 'time-item-desc' }, [entry.description]) : null,
       ]),
       h('div', { class: 'time-item-actions' }, [

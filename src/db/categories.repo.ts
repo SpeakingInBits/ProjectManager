@@ -31,7 +31,7 @@ export async function update(id: string, patch: { name: string }): Promise<Categ
 
 export async function removeCategory(id: string): Promise<void> {
   const db = await getDb();
-  const tx = db.transaction(['categories', 'subcategories', 'projects', 'tasks'], 'readwrite');
+  const tx = db.transaction(['categories', 'subcategories', 'projects', 'tasks', 'timeEntries'], 'readwrite');
 
   const subcategories = await tx.objectStore('subcategories').index('by-categoryId').getAll(id);
   for (const sub of subcategories) {
@@ -46,6 +46,14 @@ export async function removeCategory(id: string): Promise<void> {
   const tasks = await tx.objectStore('tasks').index('by-categoryId').getAll(id);
   for (const task of tasks) {
     await tx.objectStore('tasks').put({ ...task, categoryId: null, subcategoryId: null });
+  }
+
+  // timeEntries has no by-categoryId index (nullable field), so filter in memory.
+  const timeEntries = await tx.objectStore('timeEntries').getAll();
+  for (const entry of timeEntries) {
+    if (entry.categoryId === id) {
+      await tx.objectStore('timeEntries').put({ ...entry, categoryId: null });
+    }
   }
 
   await tx.objectStore('categories').delete(id);

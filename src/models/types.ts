@@ -60,10 +60,13 @@ export interface Task {
 // that drop to zero are pruned from the map. `dailyNotes` maps the same ISO
 // dates to an optional note describing what was worked on; a note only exists
 // for days that have logged time, and is pruned along with its day.
+// `categoryId` references the shared Category entity (same one projects and
+// tasks use) and powers the per-category time rollups on the Time page.
 export interface TimeEntry {
   id: ID;
   title: string;
   description: string;
+  categoryId: ID | null;
   dailyMinutes: Record<string, number>;
   dailyNotes: Record<string, string>;
   createdAt: string;

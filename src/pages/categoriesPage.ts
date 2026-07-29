@@ -107,7 +107,7 @@ export async function renderCategoriesPage(container: HTMLElement): Promise<void
         onDelete: () => {
           if (
             confirm(
-              `Delete category "${category.name}"? Its subcategories will be removed and any projects/tasks using it will become uncategorized.`
+              `Delete category "${category.name}"? Its subcategories will be removed and any projects/tasks/time items using it will become uncategorized.`
             )
           ) {
             void categoriesRepo.removeCategory(category.id).then(render);
