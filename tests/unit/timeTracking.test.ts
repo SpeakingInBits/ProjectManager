@@ -7,8 +7,9 @@ import {
   monthMinutes,
   dayHistory,
   formatMinutes,
+  organizeEntries,
 } from '../../src/domain/timeTracking';
-import type { TimeEntry } from '../../src/models/types';
+import type { Category, TimeEntry } from '../../src/models/types';
 
 function entry(dailyMinutes: Record<string, number>, dailyNotes: Record<string, string> = {}): TimeEntry {
   return {
@@ -76,6 +77,46 @@ describe('monthMinutes', () => {
   it('covers only the calendar month containing the given day', () => {
     const e = entry({ '2026-06-30': 15, '2026-07-01': 30, '2026-07-31': 45, '2026-08-01': 60 });
     expect(monthMinutes(e, '2026-07-15')).toBe(75);
+  });
+});
+
+describe('organizeEntries', () => {
+  const cat = (id: string, name: string): Category => ({ id, name, createdAt: '2026-01-01T00:00:00.000Z' });
+  const item = (title: string, categoryId: string | null): TimeEntry => ({ ...entry({}), id: title, title, categoryId });
+
+  const categories = [cat('w', 'Work'), cat('p', 'Personal')];
+  // Creation order: deliberately not alphabetical, categories interleaved.
+  const items = [item('Zebra', 'w'), item('Errands', null), item('Alpha', 'w'), item('Books', 'p')];
+
+  it('neither option: one unlabeled group in creation order', () => {
+    expect(organizeEntries(items, categories, { groupByCategory: false, sortAlphabetically: false })).toEqual([
+      { label: null, entries: items },
+    ]);
+  });
+
+  it('sort only: one flat group, alphabetical, input not mutated', () => {
+    const [group] = organizeEntries(items, categories, { groupByCategory: false, sortAlphabetically: true });
+    expect(group?.entries.map((e) => e.title)).toEqual(['Alpha', 'Books', 'Errands', 'Zebra']);
+    expect(items.map((e) => e.title)).toEqual(['Zebra', 'Errands', 'Alpha', 'Books']);
+  });
+
+  it('group only: alphabetical group labels with "No category" last, creation order within groups', () => {
+    const groups = organizeEntries(items, categories, { groupByCategory: true, sortAlphabetically: false });
+    expect(groups.map((g) => g.label)).toEqual(['Personal', 'Work', 'No category']);
+    expect(groups[1]?.entries.map((e) => e.title)).toEqual(['Zebra', 'Alpha']);
+  });
+
+  it('both options: items sorted within their groups', () => {
+    const groups = organizeEntries(items, categories, { groupByCategory: true, sortAlphabetically: true });
+    expect(groups[1]?.entries.map((e) => e.title)).toEqual(['Alpha', 'Zebra']);
+  });
+
+  it('an entry whose category was deleted falls into "No category"', () => {
+    const groups = organizeEntries([item('Orphan', 'gone')], categories, {
+      groupByCategory: true,
+      sortAlphabetically: false,
+    });
+    expect(groups).toEqual([{ label: 'No category', entries: [expect.objectContaining({ title: 'Orphan' })] }]);
   });
 });
 

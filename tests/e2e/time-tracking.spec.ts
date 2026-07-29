@@ -39,6 +39,54 @@ test('log time against a categorized item and see it in the category cards', asy
   await expect(page.locator('.time-overall .time-today-value')).toHaveText('0m');
 });
 
+test('settings can group items by category and sort them within groups', async ({ page }) => {
+  // Two categories and four items, created in non-alphabetical order.
+  await page.goto('/#/categories');
+  for (const name of ['Work', 'Personal']) {
+    await page.getByPlaceholder('New category name').fill(name);
+    await page.getByRole('button', { name: 'Add category' }).click();
+    await expect(page.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  const items: Array<[string, string | null]> = [
+    ['Zebra', 'Work'],
+    ['Errands', null],
+    ['Alpha', 'Work'],
+    ['Books', 'Personal'],
+  ];
+  for (const [title, category] of items) {
+    await page.goto('/#/time/new');
+    await page.getByLabel('Title').fill(title);
+    if (category) await page.getByLabel('Category').selectOption({ label: category });
+    await page.getByRole('button', { name: 'Create item' }).click();
+    await expect(page.locator('.time-item', { hasText: title })).toBeVisible();
+  }
+
+  const titles = page.locator('.time-item-title');
+
+  // Default: creation order, no group headings.
+  await expect(titles).toHaveText([/Zebra/, /Errands/, /Alpha/, /Books/]);
+  await expect(page.locator('.time-group-title')).toHaveCount(0);
+
+  // Group by category: alphabetical groups, "No category" last, creation
+  // order within groups.
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByLabel('Group items by category').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.locator('.time-group-title')).toHaveText(['Personal', 'Work', 'No category']);
+  await expect(titles).toHaveText([/Books/, /Zebra/, /Alpha/, /Errands/]);
+
+  // Both checked: sorted within groups.
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByLabel('Sort items alphabetically').check();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(titles).toHaveText([/Books/, /Alpha/, /Zebra/, /Errands/]);
+
+  // The view settings survive a reload (persisted in localStorage).
+  await page.reload();
+  await expect(page.locator('.time-group-title')).toHaveText(['Personal', 'Work', 'No category']);
+  await expect(titles).toHaveText([/Books/, /Alpha/, /Zebra/, /Errands/]);
+});
+
 test('an uncategorized item alone shows no category cards', async ({ page }) => {
   await page.goto('/#/time');
   await page.getByRole('button', { name: 'New item' }).click();
