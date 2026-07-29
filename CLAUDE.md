@@ -8,9 +8,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev       # Vite dev server (http://localhost:5173)
 npm run build     # tsc + vite build — this IS the typecheck; run it before finishing any change
 npm run preview   # serve the production build
+npm test          # Vitest unit tests (tests/unit): pure domain logic + repos on fake-indexeddb
+npm run test:e2e  # Playwright UI tests (tests/e2e) in Chromium against the dev server
+npx vitest run tests/unit/repeat.test.ts      # single unit test file
+npx playwright test tests/e2e/tasks.spec.ts   # single UI test file
 ```
 
-There is **no test framework and no linter** — `npm run build` (strict tsc) is the only automated gate. Verification is done manually in the browser against seeded data (below). Pushing to `main` auto-deploys to GitHub Pages via `.github/workflows/deploy.yml`, so never push unverified work to `main`; use a feature branch → PR (squash merge is the norm here).
+Run `npm run build` and `npm test` after every change; run `test:e2e` when UI behavior changed (it needs a one-time `npx playwright install chromium`, and reuses a dev server already running on 5173). There is no linter. In `tests/unit/repos.test.ts`, the `fake-indexeddb/auto` import must stay before any db import. Playwright gives each test a fresh browser context (empty IndexedDB) — tests build their own data through the UI, except the seed smoke test whose exact counts must be updated together with the seeder dataset. Pushing to `main` auto-deploys to GitHub Pages via `.github/workflows/deploy.yml`, so never push unverified work to `main`; use a feature branch → PR (squash merge is the norm here).
 
 ### Test data
 

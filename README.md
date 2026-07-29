@@ -49,7 +49,17 @@ Other scripts:
 ```bash
 npm run build     # type-check (tsc) + production build to dist/
 npm run preview   # serve the production build locally
+npm test          # unit tests (Vitest): domain logic + repos on fake-indexeddb
+npm run test:watch # unit tests in watch mode
+npm run test:e2e  # UI tests (Playwright/Chromium) against the dev server
 ```
+
+Before first running the UI tests, download the browser once with
+`npx playwright install chromium`. The UI tests start the dev server
+automatically (or reuse one already running on port 5173); each test gets a
+fresh browser context, so they never touch existing local data. Run a single
+test file with `npx vitest run tests/unit/repeat.test.ts` or
+`npx playwright test tests/e2e/tasks.spec.ts`.
 
 ### Test data
 
