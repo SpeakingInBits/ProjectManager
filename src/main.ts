@@ -43,3 +43,9 @@ router
 
 router.start();
 registerServiceWorker();
+
+// Dev-only: expose seedTestData()/clearTestData() in the console. The dynamic
+// import keeps the seeder out of the production bundle entirely.
+if (import.meta.env.DEV) {
+  void import('./dev/seed').then((m) => m.installDevTools());
+}
