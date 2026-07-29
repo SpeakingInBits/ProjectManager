@@ -51,6 +51,20 @@ npm run build     # type-check (tsc) + production build to dist/
 npm run preview   # serve the production build locally
 ```
 
+### Test data
+
+In dev mode (`npm run dev` only — never shipped in the production bundle),
+two helpers are available in the browser devtools console:
+
+- `seedTestData()` — wipes the database and fills it with a reproducible demo
+  dataset: categories/subcategories, projects (some overdue), ~26 tasks
+  (pinned, completed, every repeat flavor), and 7 time-tracked items with
+  ~10 weeks of logged time and day notes. Reloads the page when done.
+- `clearTestData()` — wipes the database.
+
+Data generation uses a fixed-seed PRNG, so every seed run produces the same
+dataset — useful for before/after comparisons when refactoring.
+
 ## Project structure
 
 ```
