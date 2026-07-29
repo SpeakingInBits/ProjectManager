@@ -809,3 +809,13 @@ textarea {
   margin-left: 8px;
   vertical-align: middle;
 }
+
+/* Category group headings when "Group items by category" is on */
+.time-group + .time-group {
+  margin-top: 20px;
+}
+
+.time-group-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}

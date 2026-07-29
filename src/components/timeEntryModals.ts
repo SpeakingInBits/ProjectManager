@@ -1,7 +1,7 @@
 import { h, clear } from '../utils/dom';
 import type { TimeEntry } from '../models/types';
 import { openModal } from './modal';
-import { dayHistory, formatMinutes } from '../domain/timeTracking';
+import { dayHistory, formatMinutes, type TimeViewOptions } from '../domain/timeTracking';
 import { formatDateDisplay, todayISODate } from '../utils/dates';
 
 // Modal for adding/editing the optional note on a day's logged time.
@@ -36,20 +36,30 @@ export function openDayNoteModal(entry: TimeEntry, date: string, onSave: (note: 
   noteInput.focus();
 }
 
+export interface TimeSettings extends TimeViewOptions {
+  entryDate: string;
+}
+
 // Settings modal for the time tracking page: pick the date that time and
-// notes are logged to, for backfilling days that were missed.
-export function openEntryDateModal(currentDate: string, onSave: (date: string) => void): void {
+// notes are logged to (for backfilling days that were missed), and choose how
+// the item list is displayed.
+export function openTimeSettingsModal(current: TimeSettings, onSave: (settings: TimeSettings) => void): void {
   const dateInput = h('input', {
     type: 'date',
     name: 'entryDate',
-    value: currentDate,
+    value: current.entryDate,
     required: true,
   }) as HTMLInputElement;
+
+  const groupCheckbox = h('input', { type: 'checkbox', checked: current.groupByCategory }) as HTMLInputElement;
+  const sortCheckbox = h('input', { type: 'checkbox', checked: current.sortAlphabetically }) as HTMLInputElement;
 
   const form = h('form', { class: 'modal-form' }, [
     h('h2', {}, ['Time tracking settings']),
     h('p', {}, ['Choose the date that time and notes are logged to. Useful for filling in days you missed.']),
     h('label', { class: 'field' }, ['Entry date', dateInput]),
+    h('label', { class: 'checkbox-field' }, [groupCheckbox, 'Group items by category']),
+    h('label', { class: 'checkbox-field' }, [sortCheckbox, 'Sort items alphabetically']),
     h('div', { class: 'form-actions' }, [
       h('button', { type: 'submit', class: 'btn btn--primary' }, ['Save']),
       h(
@@ -71,7 +81,11 @@ export function openEntryDateModal(currentDate: string, onSave: (date: string) =
     e.preventDefault();
     if (!dateInput.value) return;
     modal.close();
-    onSave(dateInput.value);
+    onSave({
+      entryDate: dateInput.value,
+      groupByCategory: groupCheckbox.checked,
+      sortAlphabetically: sortCheckbox.checked,
+    });
   });
 
   const modal = openModal(form);

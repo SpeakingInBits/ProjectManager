@@ -1,4 +1,4 @@
-import type { TimeEntry } from '../models/types';
+import type { Category, TimeEntry } from '../models/types';
 import { parseISODate, toISODate, todayISODate, addDays } from '../utils/dates';
 
 export const INCREMENT_MINUTES = 15;
@@ -49,6 +49,51 @@ export function dayHistory(entry: TimeEntry): DayLog[] {
   return Object.entries(entry.dailyMinutes)
     .map(([date, minutes]) => ({ date, minutes, note: entry.dailyNotes[date] ?? null }))
     .sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export interface TimeViewOptions {
+  groupByCategory: boolean;
+  sortAlphabetically: boolean;
+}
+
+export interface TimeEntryGroup {
+  // Category name / "No category" when grouping; null for the single flat
+  // group when grouping is off (no heading is rendered).
+  label: string | null;
+  entries: TimeEntry[];
+}
+
+// Orders the time list for display. Grouping buckets items under their
+// category name (groups alphabetical, "No category" last); sorting applies
+// within each group, or to the flat list when grouping is off. With neither
+// option the repo's creation order is preserved.
+export function organizeEntries(
+  entries: TimeEntry[],
+  categories: Category[],
+  options: TimeViewOptions
+): TimeEntryGroup[] {
+  const byTitle = (a: TimeEntry, b: TimeEntry): number =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
+  const sorted = (group: TimeEntry[]): TimeEntry[] => (options.sortAlphabetically ? [...group].sort(byTitle) : group);
+
+  if (!options.groupByCategory) return [{ label: null, entries: sorted(entries) }];
+
+  const nameById = new Map(categories.map((c) => [c.id, c.name]));
+  const NO_CATEGORY = 'No category';
+  const groups = new Map<string, TimeEntry[]>();
+  for (const entry of entries) {
+    const label = (entry.categoryId ? nameById.get(entry.categoryId) : undefined) ?? NO_CATEGORY;
+    const group = groups.get(label) ?? [];
+    group.push(entry);
+    groups.set(label, group);
+  }
+
+  const labels = [...groups.keys()].sort((a, b) => {
+    if (a === NO_CATEGORY) return 1;
+    if (b === NO_CATEGORY) return -1;
+    return a.localeCompare(b, undefined, { sensitivity: 'base' });
+  });
+  return labels.map((label) => ({ label, entries: sorted(groups.get(label)!) }));
 }
 
 // Renders minutes as "Xh Ym", "Xh", or "Ym" (and "0m" when empty).

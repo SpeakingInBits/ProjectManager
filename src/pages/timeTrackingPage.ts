@@ -3,8 +3,16 @@ import type { Category, TimeEntry } from '../models/types';
 import * as timeEntriesRepo from '../db/timeEntries.repo';
 import * as categoriesRepo from '../db/categories.repo';
 import { timeEntryItem } from '../components/timeEntryItem';
-import { INCREMENT_MINUTES, formatMinutes, todayMinutes, weekMinutes, monthMinutes } from '../domain/timeTracking';
-import { openDayNoteModal, openTimeHistoryModal, openEntryDateModal } from '../components/timeEntryModals';
+import {
+  INCREMENT_MINUTES,
+  formatMinutes,
+  todayMinutes,
+  weekMinutes,
+  monthMinutes,
+  organizeEntries,
+  type TimeViewOptions,
+} from '../domain/timeTracking';
+import { openDayNoteModal, openTimeHistoryModal, openTimeSettingsModal } from '../components/timeEntryModals';
 import { todayISODate, formatDateDisplay } from '../utils/dates';
 import { navigate } from '../router/router';
 
@@ -12,6 +20,36 @@ import { navigate } from '../router/router';
 // changeable from the settings modal to backfill missed days. Module-level so
 // it survives navigating away and back within a session.
 let entryDate = todayISODate();
+
+// How the item list is displayed (grouping/sorting). Unlike entryDate this is
+// a lasting preference, so it persists across sessions via localStorage.
+const VIEW_SETTINGS_KEY = 'timeTracking.viewSettings';
+
+function loadViewSettings(): TimeViewOptions {
+  try {
+    const raw = localStorage.getItem(VIEW_SETTINGS_KEY);
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        const p = parsed as Record<string, unknown>;
+        return { groupByCategory: Boolean(p.groupByCategory), sortAlphabetically: Boolean(p.sortAlphabetically) };
+      }
+    }
+  } catch {
+    // Corrupt or inaccessible storage — fall through to defaults.
+  }
+  return { groupByCategory: false, sortAlphabetically: false };
+}
+
+let viewSettings = loadViewSettings();
+
+function saveViewSettings(settings: TimeViewOptions): void {
+  try {
+    localStorage.setItem(VIEW_SETTINGS_KEY, JSON.stringify(settings));
+  } catch {
+    // Storage unavailable — the setting still applies for this session.
+  }
+}
 
 // Rolls every tracked item's logged minutes into a single day/week/month
 // total, so the page answers "how much did I work?" without mental addition.
@@ -101,10 +139,15 @@ export async function renderTimeTrackingPage(container: HTMLElement): Promise<vo
               {
                 class: 'btn',
                 type: 'button',
-                title: 'Change the date time is logged to',
+                title: 'Entry date, grouping, and sorting',
                 onclick: () =>
-                  openEntryDateModal(entryDate, (date) => {
-                    entryDate = date;
+                  openTimeSettingsModal({ entryDate, ...viewSettings }, (settings) => {
+                    entryDate = settings.entryDate;
+                    viewSettings = {
+                      groupByCategory: settings.groupByCategory,
+                      sortAlphabetically: settings.sortAlphabetically,
+                    };
+                    saveViewSettings(viewSettings);
                     void render();
                   }),
               },
@@ -137,34 +180,43 @@ export async function renderTimeTrackingPage(container: HTMLElement): Promise<vo
         entries.length === 0
           ? h('p', { class: 'empty-state' }, ['No time-tracked items yet. Create one to start logging time.'])
           : h(
-              'ul',
-              { class: 'time-list' },
-              entries.map((entry) =>
-                timeEntryItem(entry, entryDate, {
-                  onAdd: (e) => {
-                    void timeEntriesRepo.addMinutesOnDay(e.id, entryDate, INCREMENT_MINUTES).then(render);
-                  },
-                  onSubtract: (e) => {
-                    void timeEntriesRepo.addMinutesOnDay(e.id, entryDate, -INCREMENT_MINUTES).then(render);
-                  },
-                  onDelete: (e) => {
-                    if (confirm(`Delete time-tracked item "${e.title}"? This also deletes its logged time.`))
-                      void timeEntriesRepo.remove(e.id).then(render);
-                  },
-                  onEditNote: (e) => {
-                    openDayNoteModal(e, entryDate, (note) => {
-                      void timeEntriesRepo.setDayNote(e.id, entryDate, note).then(render);
-                    });
-                  },
-                  onHistory: (e) => {
-                    openTimeHistoryModal(e, (date, note) =>
-                      timeEntriesRepo.setDayNote(e.id, date, note).then((updated) => {
-                        void render();
-                        return updated;
-                      })
-                    );
-                  },
-                }, entry.categoryId ? categoryNames.get(entry.categoryId) ?? null : null)
+              'div',
+              {},
+              organizeEntries(entries, categories, viewSettings).map((group) =>
+                h('section', { class: 'time-group' }, [
+                  group.label ? h('h2', { class: 'time-group-title' }, [group.label]) : null,
+                  h(
+                    'ul',
+                    { class: 'time-list' },
+                    group.entries.map((entry) =>
+                      timeEntryItem(entry, entryDate, {
+                        onAdd: (e) => {
+                          void timeEntriesRepo.addMinutesOnDay(e.id, entryDate, INCREMENT_MINUTES).then(render);
+                        },
+                        onSubtract: (e) => {
+                          void timeEntriesRepo.addMinutesOnDay(e.id, entryDate, -INCREMENT_MINUTES).then(render);
+                        },
+                        onDelete: (e) => {
+                          if (confirm(`Delete time-tracked item "${e.title}"? This also deletes its logged time.`))
+                            void timeEntriesRepo.remove(e.id).then(render);
+                        },
+                        onEditNote: (e) => {
+                          openDayNoteModal(e, entryDate, (note) => {
+                            void timeEntriesRepo.setDayNote(e.id, entryDate, note).then(render);
+                          });
+                        },
+                        onHistory: (e) => {
+                          openTimeHistoryModal(e, (date, note) =>
+                            timeEntriesRepo.setDayNote(e.id, date, note).then((updated) => {
+                              void render();
+                              return updated;
+                            })
+                          );
+                        },
+                      }, entry.categoryId ? categoryNames.get(entry.categoryId) ?? null : null)
+                    )
+                  ),
+                ])
               )
             ),
       ])
