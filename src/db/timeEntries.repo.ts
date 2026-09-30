@@ -87,3 +87,30 @@ export async function setDayNote(id: string, date: string, note: string): Promis
   await db.put('timeEntries', updated);
   return updated;
 }
+
+// Merges `sourceId` into `targetId`: the source's logged time is added to the
+// target's day by day, and a note on a day both logged is appended to the
+// target's (on a new line). The source is then deleted; the target keeps its
+// own title, description, and category. Every source day has minutes > 0, so
+// no empty days or orphan notes can result. Runs in a single transaction so a
+// failure can't leave time duplicated or lost.
+export async function mergeInto(sourceId: string, targetId: string): Promise<TimeEntry> {
+  if (sourceId === targetId) throw new Error('Cannot merge a time entry into itself');
+  const db = await getDb();
+  const tx = db.transaction('timeEntries', 'readwrite');
+  const [source, target] = await Promise.all([tx.store.get(sourceId), tx.store.get(targetId)]);
+  if (!source) throw new Error(`Time entry ${sourceId} not found`);
+  if (!target) throw new Error(`Time entry ${targetId} not found`);
+
+  const dailyMinutes = { ...target.dailyMinutes };
+  const dailyNotes = { ...target.dailyNotes };
+  for (const [date, minutes] of Object.entries(source.dailyMinutes)) {
+    dailyMinutes[date] = (dailyMinutes[date] ?? 0) + minutes;
+    const note = source.dailyNotes[date];
+    if (note) dailyNotes[date] = dailyNotes[date] ? `${dailyNotes[date]}\n${note}` : note;
+  }
+
+  const updated: TimeEntry = { ...target, dailyMinutes, dailyNotes, updatedAt: nowISO() };
+  await Promise.all([tx.store.put(updated), tx.store.delete(sourceId), tx.done]);
+  return updated;
+}
