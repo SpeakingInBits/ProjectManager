@@ -10,7 +10,9 @@ data lives in the browser via IndexedDB.
   bar showing tasks completed vs. total. A project's total time spent is
   derived automatically from its tasks (not tracked separately).
 - **Tasks** with a title, description, optional due date, and time spent
-  (hours). Each task can belong to a single project, or stand alone.
+  (hours). Each task can belong to a single project, or stand alone. The
+  Tasks page settings can turn on a confirmation prompt before a task is
+  marked complete.
 - **Repeatable tasks** — optional, one of: Never, Daily, Weekly, Monthly,
   Yearly, a custom number of days, or **Movable** (reappears N days *after*
   you mark it complete, rather than on a fixed schedule). Completing a

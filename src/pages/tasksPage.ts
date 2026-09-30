@@ -4,6 +4,7 @@ import * as projectsRepo from '../db/projects.repo';
 import { toggleTaskCompletion } from '../domain/completionFlow';
 import { sortTasks } from '../domain/taskSort';
 import { taskListItem } from '../components/taskListItem';
+import { confirmTaskCompletion, openTaskSettingsModal } from '../components/taskSettings';
 import { navigate } from '../router/router';
 
 export async function renderTasksPage(container: HTMLElement): Promise<void> {
@@ -22,7 +23,19 @@ export async function renderTasksPage(container: HTMLElement): Promise<void> {
       h('div', { class: 'page' }, [
         h('div', { class: 'page-header' }, [
           h('h1', {}, ['Tasks']),
-          h('button', { class: 'btn btn--primary', type: 'button', onclick: () => navigate('/tasks/new') }, ['New task']),
+          h('div', { class: 'page-header-actions' }, [
+            h(
+              'button',
+              {
+                class: 'btn',
+                type: 'button',
+                title: 'Task completion preferences',
+                onclick: () => openTaskSettingsModal(() => void render()),
+              },
+              ['Settings']
+            ),
+            h('button', { class: 'btn btn--primary', type: 'button', onclick: () => navigate('/tasks/new') }, ['New task']),
+          ]),
         ]),
         h('div', { class: 'field-row' }, [
           h('label', { class: 'checkbox-field' }, [
@@ -71,6 +84,8 @@ export async function renderTasksPage(container: HTMLElement): Promise<void> {
                   task,
                   {
                     onToggleComplete: (t) => {
+                      // A declined confirmation re-renders to reset the checkbox.
+                      if (!confirmTaskCompletion(t)) return void render();
                       void toggleTaskCompletion(t).then(render);
                     },
                     onTogglePin: (t) => {
