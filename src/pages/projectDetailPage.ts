@@ -8,6 +8,7 @@ import { toggleTaskCompletion } from '../domain/completionFlow';
 import { sortTasks } from '../domain/taskSort';
 import { progressBar } from '../components/progressBar';
 import { taskListItem } from '../components/taskListItem';
+import { confirmTaskCompletion } from '../components/taskSettings';
 import { navigate } from '../router/router';
 import { formatDateDisplay } from '../utils/dates';
 import type { Task } from '../models/types';
@@ -50,6 +51,8 @@ export async function renderProjectDetailPage(container: HTMLElement, params: Re
             filtered.map((task) =>
               taskListItem(task, {
                 onToggleComplete: (t) => {
+                  // A declined confirmation re-renders to reset the checkbox.
+                  if (!confirmTaskCompletion(t)) return void render();
                   void toggleTaskCompletion(t).then(render);
                 },
                 onTogglePin: (t) => {
