@@ -252,6 +252,21 @@ textarea {
   margin-top: 8px;
 }
 
+/* A secondary card below a page's main form (e.g. the time item merge). */
+.form-section {
+  margin-top: 20px;
+}
+
+.form-section h2,
+.form-section p {
+  margin: 0;
+}
+
+.form-section p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .inline-form {
   display: flex;
   gap: 8px;

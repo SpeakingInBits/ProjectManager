@@ -1,6 +1,7 @@
 import { h, clear } from '../utils/dom';
 import * as timeEntriesRepo from '../db/timeEntries.repo';
 import * as categoriesRepo from '../db/categories.repo';
+import { openMergeTimeEntryModal } from '../components/timeEntryModals';
 import { navigate } from '../router/router';
 
 export async function renderTimeEntryFormPage(container: HTMLElement, params: Record<string, string>): Promise<void> {
@@ -43,6 +44,33 @@ export async function renderTimeEntryFormPage(container: HTMLElement, params: Re
       : timeEntriesRepo.create(input).then(() => navigate('/time')));
   });
 
+  // Merging folds this item's logged time into another item and deletes this
+  // one — for consolidating duplicates. Only offered when there's a target.
+  const others = isEdit ? (await timeEntriesRepo.list()).filter((e) => e.id !== existing!.id) : [];
+  const mergeSection =
+    others.length === 0
+      ? null
+      : h('section', { class: 'form form-section' }, [
+          h('h2', {}, ['Merge']),
+          h('p', {}, ["Move this item's logged time and notes into another item, then delete this one."]),
+          h('div', { class: 'form-actions' }, [
+            h(
+              'button',
+              {
+                type: 'button',
+                class: 'btn',
+                onclick: () =>
+                  openMergeTimeEntryModal(existing!, others, (targetId) => {
+                    void timeEntriesRepo.mergeInto(existing!.id, targetId).then(() => navigate('/time'));
+                  }),
+              },
+              ['Merge into another item…']
+            ),
+          ]),
+        ]);
+
   clear(container);
-  container.append(h('div', { class: 'page' }, [h('h1', {}, [isEdit ? 'Edit time item' : 'New time item']), form]));
+  container.append(
+    h('div', { class: 'page' }, [h('h1', {}, [isEdit ? 'Edit time item' : 'New time item']), form, mergeSection])
+  );
 }

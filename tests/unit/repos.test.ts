@@ -62,6 +62,41 @@ describe('timeEntries.setDayNote', () => {
   });
 });
 
+describe('timeEntries.mergeInto', () => {
+  it('sums overlapping days, joins their notes, keeps target fields, and deletes the source', async () => {
+    const cat = await categoriesRepo.create({ name: 'Work' });
+    const target = await timeEntriesRepo.create({ title: 'Target', description: 'keep me', categoryId: cat.id });
+    const source = await timeEntriesRepo.create({ title: 'Source', description: 'drop me', categoryId: null });
+
+    await timeEntriesRepo.addMinutesOnDay(target.id, '2026-07-28', 30);
+    await timeEntriesRepo.setDayNote(target.id, '2026-07-28', 'target note');
+    await timeEntriesRepo.addMinutesOnDay(target.id, '2026-07-29', 15);
+
+    await timeEntriesRepo.addMinutesOnDay(source.id, '2026-07-28', 45);
+    await timeEntriesRepo.setDayNote(source.id, '2026-07-28', 'source note');
+    await timeEntriesRepo.addMinutesOnDay(source.id, '2026-07-29', 15);
+    await timeEntriesRepo.setDayNote(source.id, '2026-07-29', 'only source');
+    await timeEntriesRepo.addMinutesOnDay(source.id, '2026-07-30', 60);
+
+    const merged = await timeEntriesRepo.mergeInto(source.id, target.id);
+
+    expect(merged.dailyMinutes).toEqual({ '2026-07-28': 75, '2026-07-29': 30, '2026-07-30': 60 });
+    expect(merged.dailyNotes).toEqual({ '2026-07-28': 'target note\nsource note', '2026-07-29': 'only source' });
+    expect(merged).toMatchObject({ id: target.id, title: 'Target', description: 'keep me', categoryId: cat.id });
+    expect(await timeEntriesRepo.get(target.id)).toEqual(merged);
+    expect(await timeEntriesRepo.get(source.id)).toBeUndefined();
+  });
+
+  it('refuses to merge an item into itself or a missing item, changing nothing', async () => {
+    const e = await timeEntriesRepo.create({ title: 'Solo', description: '', categoryId: null });
+    await timeEntriesRepo.addMinutesOnDay(e.id, '2026-07-29', 15);
+
+    await expect(timeEntriesRepo.mergeInto(e.id, e.id)).rejects.toThrow();
+    await expect(timeEntriesRepo.mergeInto(e.id, 'missing')).rejects.toThrow();
+    expect((await timeEntriesRepo.get(e.id))?.dailyMinutes).toEqual({ '2026-07-29': 15 });
+  });
+});
+
 describe('categories.removeCategory cascade', () => {
   it('deletes subcategories and detaches projects, tasks, and time entries', async () => {
     const cat = await categoriesRepo.create({ name: 'Work' });

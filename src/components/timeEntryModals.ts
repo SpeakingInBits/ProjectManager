@@ -1,7 +1,7 @@
 import { h, clear } from '../utils/dom';
 import type { TimeEntry } from '../models/types';
 import { openModal } from './modal';
-import { dayHistory, formatMinutes, type TimeViewOptions } from '../domain/timeTracking';
+import { dayHistory, formatMinutes, totalMinutes, type TimeViewOptions } from '../domain/timeTracking';
 import { formatDateDisplay, todayISODate } from '../utils/dates';
 
 // Modal for adding/editing the optional note on a day's logged time.
@@ -158,4 +158,54 @@ export function openTimeHistoryModal(
   ]);
 
   const modal = openModal(content);
+}
+
+// Modal for merging one item into another: pick the target, see what will
+// move, and confirm. `candidates` are the other items (the source excluded).
+export function openMergeTimeEntryModal(
+  source: TimeEntry,
+  candidates: TimeEntry[],
+  onMerge: (targetId: string) => void
+): void {
+  const sorted = [...candidates].sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+  const targetSelect = h('select', { name: 'targetId', required: true }, [
+    h('option', { value: '' }, ['Choose an item…']),
+    ...sorted.map((c) => h('option', { value: c.id }, [c.title])),
+  ]) as HTMLSelectElement;
+
+  const days = Object.keys(source.dailyMinutes).length;
+  const notes = Object.keys(source.dailyNotes).length;
+  const logged =
+    days === 0
+      ? 'It has no logged time.'
+      : `Its ${formatMinutes(totalMinutes(source))} across ${days} day${days === 1 ? '' : 's'}` +
+        (notes > 0 ? ` (with ${notes} note${notes === 1 ? '' : 's'})` : '') +
+        ' will be added to the chosen item.';
+
+  const mergeButton = h('button', { type: 'submit', class: 'btn btn--danger', disabled: true }, ['Merge']) as HTMLButtonElement;
+  targetSelect.addEventListener('change', () => {
+    mergeButton.disabled = !targetSelect.value;
+  });
+
+  const form = h('form', { class: 'modal-form' }, [
+    h('h2', {}, [`Merge "${source.title}"`]),
+    h('p', {}, [
+      `${logged} "${source.title}" will then be deleted. The chosen item keeps its own title, description, and category. This cannot be undone.`,
+    ]),
+    h('label', { class: 'field' }, ['Merge into', targetSelect]),
+    h('div', { class: 'form-actions' }, [
+      mergeButton,
+      h('button', { type: 'button', class: 'btn', onclick: () => modal.close() }, ['Cancel']),
+    ]),
+  ]);
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!targetSelect.value) return;
+    modal.close();
+    onMerge(targetSelect.value);
+  });
+
+  const modal = openModal(form);
+  targetSelect.focus();
 }

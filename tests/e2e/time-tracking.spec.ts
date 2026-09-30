@@ -96,3 +96,41 @@ test('an uncategorized item alone shows no category cards', async ({ page }) => 
   await expect(page.locator('.time-item', { hasText: 'Podcasts' })).toBeVisible();
   await expect(page.locator('.time-category-cards')).toHaveCount(0);
 });
+
+test('merging an item moves its logged time into the target and deletes it', async ({ page }) => {
+  for (const title of ['Design', 'Design (dup)']) {
+    await page.goto('/#/time/new');
+    await page.getByLabel('Title').fill(title);
+    await page.getByRole('button', { name: 'Create item' }).click();
+    await expect(page.locator('.time-item', { hasText: title })).toBeVisible();
+  }
+  const item = (title: string) => page.locator('.time-item').filter({ has: page.getByText(title, { exact: true }) });
+
+  // 30m on the target, 15m on the duplicate.
+  await item('Design').getByRole('button', { name: 'Add 15 minutes' }).click();
+  await item('Design').getByRole('button', { name: 'Add 15 minutes' }).click();
+  await item('Design (dup)').getByRole('button', { name: 'Add 15 minutes' }).click();
+  await expect(item('Design').locator('.time-total')).toHaveText('30m');
+
+  // Merge the duplicate into the target from its edit page.
+  await item('Design (dup)').getByRole('button', { name: 'Edit' }).click();
+  await page.getByRole('button', { name: 'Merge into another item…' }).click();
+  const merge = page.getByRole('button', { name: 'Merge', exact: true });
+  await expect(merge).toBeDisabled();
+  await page.getByLabel('Merge into').selectOption({ label: 'Design' });
+  await merge.click();
+
+  // Back on the Time page: one item left, holding the combined time.
+  await expect(page.locator('.time-item')).toHaveCount(1);
+  await expect(item('Design').locator('.time-total')).toHaveText('45m');
+  await expect(page.locator('.time-overall .time-today-value')).toHaveText('45m');
+});
+
+test('merge is not offered when there is no other item', async ({ page }) => {
+  await page.goto('/#/time/new');
+  await page.getByLabel('Title').fill('Only item');
+  await page.getByRole('button', { name: 'Create item' }).click();
+  await page.locator('.time-item', { hasText: 'Only item' }).getByRole('button', { name: 'Edit' }).click();
+  await expect(page.getByRole('heading', { name: 'Edit time item' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Merge into another item…' })).toHaveCount(0);
+});
