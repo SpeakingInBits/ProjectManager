@@ -20,16 +20,29 @@ export function addDays(date: Date, days: number): Date {
   return result;
 }
 
+// The same day `months` later, or the last day of that month when it's
+// shorter (Jan 31 + 1 month = Feb 28). Date#setMonth would instead overflow
+// into the next month (Mar 3).
 export function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
+  return addMonthsOnDay(date, months, date.getDate());
 }
 
+// Day `day` of the month `months` after `date`'s, or that month's last day
+// when it's shorter.
+export function addMonthsOnDay(date: Date, months: number, day: number): Date {
+  const first = new Date(date.getFullYear(), date.getMonth() + months, 1);
+  const clamped = Math.min(Math.max(day, 1), lastDayOfMonth(first));
+  return new Date(first.getFullYear(), first.getMonth(), clamped);
+}
+
+// The same date `years` later; Feb 29 becomes Feb 28 in a non-leap year.
 export function addYears(date: Date, years: number): Date {
-  const result = new Date(date);
-  result.setFullYear(result.getFullYear() + years);
-  return result;
+  return addMonths(date, years * 12);
+}
+
+// The number of the last day in `date`'s month (28–31).
+export function lastDayOfMonth(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
 
 export function formatDateDisplay(iso: string | null): string {

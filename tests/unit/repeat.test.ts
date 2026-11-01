@@ -25,6 +25,18 @@ describe('computeNextDueDate', () => {
     expect(iso(computeNextDueDate({ kind: 'movable', intervalDays: 30 }, completedWed, dueMon))).toBe('2026-08-28');
   });
 
+  it('monthly/yearly take the last day of a short month instead of overflowing', () => {
+    const next = (kind: 'monthly' | 'yearly', previous: string, anchor: number | null = null): string | null =>
+      iso(computeNextDueDate({ kind }, completedWed, parseISODate(previous), anchor));
+    expect(next('monthly', '2026-01-31')).toBe('2026-02-28');
+    expect(next('monthly', '2028-01-31')).toBe('2028-02-29');
+    expect(next('yearly', '2028-02-29')).toBe('2029-02-28');
+    // The anchor brings a series back to its day once months are long enough.
+    expect(next('monthly', '2026-02-28', 31)).toBe('2026-03-31');
+    expect(next('monthly', '2026-03-31', 31)).toBe('2026-04-30');
+    expect(next('yearly', '2031-02-28', 29)).toBe('2032-02-29');
+  });
+
   it('falls back to the completion date when there is no previous due date', () => {
     expect(iso(computeNextDueDate({ kind: 'weekly' }, completedWed, null))).toBe('2026-08-05');
   });

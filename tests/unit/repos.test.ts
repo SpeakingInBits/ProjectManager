@@ -143,6 +143,43 @@ describe('completeTask (repeat spawning)', () => {
     expect(next?.previousInstanceId).toBe(t.id);
   });
 
+  // Completes the open occurrence again and again, returning each new due date.
+  async function completeRepeatedly(firstId: string, times: number): Promise<(string | null)[]> {
+    const dueDates: (string | null)[] = [];
+    let current = firstId;
+    for (let i = 0; i < times; i++) {
+      const { nextInstance } = await completeTask(current);
+      if (!nextInstance) throw new Error('expected a next occurrence');
+      dueDates.push(nextInstance.dueDate);
+      current = nextInstance.id;
+    }
+    return dueDates;
+  }
+
+  const repeating = (dueDate: string, repeat: { kind: 'monthly' } | { kind: 'yearly' }) =>
+    tasksRepo.create({
+      title: 'Repeats', description: '', dueDate, projectId: null,
+      categoryId: null, subcategoryId: null, repeat,
+    });
+
+  it('keeps a monthly series on its day through short months', async () => {
+    const on31 = await repeating('2026-01-31', { kind: 'monthly' });
+    expect(await completeRepeatedly(on31.id, 4)).toEqual(['2026-02-28', '2026-03-31', '2026-04-30', '2026-05-31']);
+
+    const on30 = await repeating('2026-01-30', { kind: 'monthly' });
+    expect(await completeRepeatedly(on30.id, 2)).toEqual(['2026-02-28', '2026-03-30']);
+
+    const leap = await repeating('2028-02-29', { kind: 'yearly' });
+    expect(await completeRepeatedly(leap.id, 4)).toEqual(['2029-02-28', '2030-02-28', '2031-02-28', '2032-02-29']);
+  });
+
+  it('moves a monthly series to an edited due date', async () => {
+    const t = await repeating('2026-01-31', { kind: 'monthly' });
+    const { nextInstance } = await completeTask(t.id);
+    await tasksRepo.update(nextInstance!.id, { dueDate: '2026-02-15' });
+    expect(await completeRepeatedly(nextInstance!.id, 2)).toEqual(['2026-03-15', '2026-04-15']);
+  });
+
   it('does not spawn anything for a non-repeating task', async () => {
     const t = await tasksRepo.create({
       title: 'One-off', description: '', dueDate: todayISODate(), projectId: null,

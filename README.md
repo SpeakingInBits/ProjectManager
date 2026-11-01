@@ -19,6 +19,9 @@ data lives in the browser via IndexedDB.
   repeating task never resets it in place — the completed task stays as a
   permanent history record, and a new task is created for the next
   occurrence. This lets a project's progress bar genuinely reach 100%.
+  Monthly and yearly repeats stay on their day of the month, taking the
+  last day of a shorter month (a task due on the 31st repeats Jan 31,
+  Feb 28, Mar 31, Apr 30).
 - **Categories & subcategories** — a single shared taxonomy usable by both
   projects and tasks, managed on one combined CRUD page.
 - **Installable PWA** — has a web app manifest and a registered service

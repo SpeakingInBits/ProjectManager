@@ -1,5 +1,5 @@
 import type { RepeatConfig, Task, ID } from '../models/types';
-import { addDays, addMonths, addYears, parseISODate, toISODate, nowISO } from '../utils/dates';
+import { addDays, addMonthsOnDay, lastDayOfMonth, parseISODate, toISODate, nowISO } from '../utils/dates';
 import { uuid } from '../utils/uuid';
 import * as tasksRepo from '../db/tasks.repo';
 
@@ -8,12 +8,18 @@ import * as tasksRepo from '../db/tasks.repo';
 // completed on a Wednesday is still next due the following Monday (no drift).
 // `movable` is completion-anchored: the next date is always computed from
 // when the task was actually completed, ignoring the previous due date.
+//
+// `monthly`/`yearly` fall on `anchorDay` (the base date's day by default), or
+// on the last day of a month too short for it: a series anchored on the 31st
+// goes Jan 31, Feb 28, Mar 31.
 export function computeNextDueDate(
   repeat: RepeatConfig,
   completionDate: Date,
-  previousDueDate: Date | null
+  previousDueDate: Date | null,
+  anchorDay: number | null = null
 ): Date | null {
   const base = previousDueDate ?? completionDate;
+  const day = anchorDay ?? base.getDate();
   switch (repeat.kind) {
     case 'never':
       return null;
@@ -22,9 +28,9 @@ export function computeNextDueDate(
     case 'weekly':
       return addDays(base, 7);
     case 'monthly':
-      return addMonths(base, 1);
+      return addMonthsOnDay(base, 1, day);
     case 'yearly':
-      return addYears(base, 1);
+      return addMonthsOnDay(base, 12, day);
     case 'custom':
       return addDays(base, repeat.intervalDays);
     case 'movable':
@@ -56,7 +62,8 @@ export async function completeTask(
   }
 
   const previousDueDate = task.dueDate ? parseISODate(task.dueDate) : null;
-  const nextDueDate = computeNextDueDate(task.repeat, completionDate, previousDueDate);
+  const anchorDay = previousDueDate ? await seriesAnchorDay(task, previousDueDate) : null;
+  const nextDueDate = computeNextDueDate(task.repeat, completionDate, previousDueDate, anchorDay);
 
   const now = nowISO();
   const nextInstance: Task = {
@@ -79,6 +86,20 @@ export async function completeTask(
 
   await tasksRepo.insert(nextInstance);
   return { completed, nextInstance };
+}
+
+// The day of month a monthly or yearly series falls on: the previous due
+// date's day, unless that was a short month's last day standing in for a
+// later day. Then the series' first due date (the row whose id is the
+// seriesId) says which day it really is, so Jan 31 → Feb 28 is followed by
+// Mar 31 rather than Mar 28. Editing an occurrence to a mid-month day moves
+// the series to that day.
+async function seriesAnchorDay(task: Task, previousDueDate: Date): Promise<number> {
+  const day = previousDueDate.getDate();
+  if (day < lastDayOfMonth(previousDueDate)) return day;
+  const first = await tasksRepo.get(task.seriesId);
+  const firstDay = first?.dueDate ? parseISODate(first.dueDate).getDate() : 0;
+  return firstDay > day ? firstDay : day;
 }
 
 // Plain field flip. Note: un-completing an already-spawned repeating task's
